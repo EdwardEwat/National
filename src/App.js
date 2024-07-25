@@ -1,23 +1,21 @@
-import logo from './logo.svg';
-import './App.css';
+import Footer from "./components/Footer/Footer";
+import Header from "./components/Header/Header";
+import Info from "./components/Main/Info/Info";
+import ListCountry from "./components/Main/ListCountry";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 function App() {
+  document.title = "Danh sách quốc gia";
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      <Header></Header>
+      <Router>
+        <Routes>
+          <Route path="/" element={<ListCountry />} />
+          <Route path="/info" element={<Info />} />
+        </Routes>
+      </Router>
+      <Footer haveclass={null}></Footer>
     </div>
   );
 }

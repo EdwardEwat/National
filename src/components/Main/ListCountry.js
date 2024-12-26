@@ -2,8 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import axios from "axios";
 import Country from "./Country";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchNations } from "../../redux/apiNation/apiNations";
+import { Input, Pagination, Modal, InputNumber } from "antd";
 
 const MainDiv = styled.div`
   margin: 20px;
@@ -14,20 +16,10 @@ const SecondaryDiv = styled.div`
   justify-items: center;
 `;
 
-const getAPI = () => {
-  return axios
-    .get(
-      "https://restcountries.com/v3.1/independent?status=true&fields=languages,capital,name,population,continents,flags"
-    )
-    .then((response) => {
-      return response.data;
-    })
-    .catch((error) => {
-      console.log(error);
-    });
-};
-
 const ListCountry = () => {
+  const dispatch = useDispatch();
+  const { nations, loading } = useSelector((state) => state.nation);
+
   const [countries, setCountries] = useState([]);
   const [filteredCountries, setFilteredCountries] = useState([]);
   const [update, setUpdate] = useState(false);
@@ -48,12 +40,37 @@ const ListCountry = () => {
     population: 0,
     continents: [""],
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
 
   const navigate = useNavigate();
 
-  const UpdateDB = () => {
-    const update1 = !update;
-    setUpdate(update1);
+  useEffect(() => {
+    const getList = async () => {
+      try {
+        await dispatch(fetchNations());
+      } catch (error) {
+        console.error("Failed to fetch nations:", error);
+      }
+    };
+    getList();
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (nations) {
+      setCountries(nations);
+      setFilteredCountries(nations);
+    }
+  }, [nations]);
+
+  const reLoad = () => {
+    dispatch(fetchNations());
   };
 
   const ClickSearch = () => {
@@ -67,6 +84,7 @@ const ListCountry = () => {
     } else {
       setFilteredCountries(countries);
     }
+    setCurrentPage(1);
   };
 
   const deleteCountry = (countryName) => {
@@ -84,6 +102,7 @@ const ListCountry = () => {
 
   const AddCountry = () => {
     setCountries([...countries, newCountry]);
+    console.log(newCountry);
     setFilteredCountries([...filteredCountries, newCountry]);
     setShowAddForm(false);
     setNewCountry({
@@ -116,6 +135,13 @@ const ListCountry = () => {
     }));
   };
 
+  const handleNumberChange = (value) => {
+    setNewCountry((prevCountry) => ({
+      ...prevCountry,
+      population: value,
+    }));
+  };
+
   const handleArrayChange = (e, key) => {
     const { value } = e.target;
     setNewCountry((prevCountry) => ({
@@ -124,34 +150,33 @@ const ListCountry = () => {
     }));
   };
 
-  const reLoad = () => {
-    getAPI().then((listCountry) => {
-      setCountries(listCountry);
-      setFilteredCountries(listCountry);
-    });
+  const UpdateDB = () => {
+    setUpdate((prev) => !prev);
   };
 
-  useEffect(() => {
-    getAPI().then((listCountry) => {
-      setCountries(listCountry);
-      setFilteredCountries(listCountry);
-    });
-  }, []);
+  const { Search } = Input;
+
+  const sortedCountries = [...filteredCountries].sort((a, b) =>
+    a.name.common.localeCompare(b.name.common)
+  );
+
+  const currentItems = sortedCountries.slice(indexOfFirstItem, indexOfLastItem);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div>
       <MainDiv>
         <div className="flex items-center">
           <div className="flex border border-solid border-black rounded">
-            <input
-              type="text"
-              className="p-1"
+            <Search
               id="Search"
-              placeholder="Input name of country"
+              placeholder="Nhập vào tên quốc gia"
+              onSearch={ClickSearch}
+              enterButton
             />
-            <div className="cursor-pointer p-1" onClick={ClickSearch}>
-              <i className="bi bi-search"></i>
-            </div>
           </div>
           <div className="ml-3">
             <button
@@ -173,19 +198,23 @@ const ListCountry = () => {
               className=" rounded-md border-solid border border-green-300 p-2 w-32 font-medium ml-3"
               onClick={reLoad}
             >
-              <i class="bi bi-arrow-counterclockwise"></i> Reload API
+              <i className="bi bi-arrow-counterclockwise"></i> Reload API
             </button>
           </div>
         </div>
         {showAddForm && (
-          <div className="mt-5 p-4 bg-gray-100 rounded-md w-64">
-            <h2 className="font-semibold text-xl">Add New Country</h2>
+          <Modal
+            title="Add New Country"
+            open={showAddForm}
+            onOk={AddCountry}
+            onCancel={() => setShowAddForm(false)}
+          >
             <div className="my-2">
               <label>
                 <SecondaryDiv className="inline w-44 mr-3">
                   <span>Common Name:</span>
                 </SecondaryDiv>
-                <input
+                <Input
                   type="text"
                   name="name.common"
                   value={newCountry.name.common}
@@ -198,7 +227,7 @@ const ListCountry = () => {
                 <SecondaryDiv className="inline w-44 mr-3">
                   <span>Official Name:</span>
                 </SecondaryDiv>
-                <input
+                <Input
                   type="text"
                   name="name.official"
                   value={newCountry.name.official}
@@ -211,7 +240,7 @@ const ListCountry = () => {
                 <SecondaryDiv className="inline w-44 mr-3">
                   <span>Flag SVG URL:</span>
                 </SecondaryDiv>
-                <input
+                <Input
                   type="text"
                   name="flags.svg"
                   value={newCountry.flags.svg}
@@ -224,7 +253,7 @@ const ListCountry = () => {
                 <SecondaryDiv className="inline w-44 mr-3">
                   <span>Capital:</span>
                 </SecondaryDiv>
-                <input
+                <Input
                   type="text"
                   name="capital"
                   value={newCountry.capital[0]}
@@ -237,20 +266,20 @@ const ListCountry = () => {
                 <SecondaryDiv className="inline w-44 mr-3">
                   <span>Population:</span>
                 </SecondaryDiv>
-                <input
-                  type="number"
-                  name="population"
+                <InputNumber
+                  min={0}
                   value={newCountry.population}
-                  onChange={handleInputChange}
+                  style={{ width: "100%" }}
+                  onChange={handleNumberChange}
                 />
               </label>
             </div>
             <div className="my-2">
               <label>
                 <SecondaryDiv className="inline w-44 mr-3">
-                  <span>Continent:</span>
+                  <span>Continents:</span>
                 </SecondaryDiv>
-                <input
+                <Input
                   type="text"
                   name="continents"
                   value={newCountry.continents[0]}
@@ -258,23 +287,15 @@ const ListCountry = () => {
                 />
               </label>
             </div>
-            <button
-              type="button"
-              className="bg-blue-500 text-white p-2 rounded"
-              onClick={AddCountry}
-            >
-              Add Country
-            </button>
-          </div>
+          </Modal>
         )}
         <div className="mt-5 rounded-md bg-gray-100">
           <div className="block bg-gray-400 font-semibold text-3xl pl-4 rounded-t-md pt-1 pb-2">
             Countries
           </div>
           <div className="m-4 mt-2">
-            {filteredCountries
-              .sort((a, b) => a.name.common.localeCompare(b.name.common))
-              .map((item, index) => (
+            {currentItems.length !== 0 &&
+              currentItems.map((item, index) => (
                 <Country
                   acceptUpdate={update}
                   key={index}
@@ -285,6 +306,13 @@ const ListCountry = () => {
                 </Country>
               ))}
           </div>
+          <Pagination
+            current={currentPage}
+            pageSize={itemsPerPage}
+            total={filteredCountries.length}
+            onChange={handlePageChange}
+            style={{ display: "flex", justifyContent: "center" }}
+          />
         </div>
       </MainDiv>
     </div>

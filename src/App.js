@@ -7,16 +7,18 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 function App() {
   document.title = "Danh sách quốc gia";
   return (
-    <div>
-      <Header></Header>
-      <Router>
-        <Routes>
-          <Route path="/" element={<ListCountry />} />
-          <Route path="/info" element={<Info />} />
-        </Routes>
-      </Router>
-      <Footer haveclass={null}></Footer>
-    </div>
+    <Router>
+      <div className="flex flex-col min-h-screen">
+        <Header></Header>
+        <main className="flex-grow">
+          <Routes>
+            <Route path="/" element={<ListCountry />} />
+            <Route path="/info" element={<Info />} />
+          </Routes>
+        </main>
+        <Footer />
+      </div>
+    </Router>
   );
 }
 
